@@ -18,11 +18,36 @@ import streamlit.components.v1 as components
 
 # ========== 🔧 自動初始化資料庫（只在第一次部署時執行） ==========
 import os
-if not os.path.exists('campus_help.db'):
-    from database import init_db, seed_test_data
-    init_db()
-    seed_test_data()
-    print("✅ 資料庫初始化完成（含測試資料）")
+
+# 檢查資料庫是否存在且有效
+db_exists = os.path.exists('campus_help.db')
+db_valid = False
+
+if db_exists:
+    # 檢查資料庫是否有效（嘗試查詢）
+    try:
+        from database import Session, User
+        session = Session()
+        session.query(User).first()
+        session.close()
+        db_valid = True
+    except:
+        db_valid = False
+
+# 如果資料庫不存在或無效，重新初始化
+if not db_exists or not db_valid:
+    try:
+        from database import init_db, seed_test_data
+        
+        # 如果檔案存在但無效，先刪除
+        if db_exists and not db_valid:
+            os.remove('campus_help.db')
+        
+        init_db()
+        seed_test_data()
+        print("✅ 資料庫初始化完成（含測試資料）")
+    except Exception as e:
+        print(f"❌ 資料庫初始化失敗：{str(e)}")
 
 # 頁面配置
 st.set_page_config(
@@ -293,8 +318,13 @@ def get_platform_stats():
 with st.sidebar:
     st.markdown("### 👤 使用者登入")
     
-    users = get_all_users()
-    user_names = [f"{u['name']} ({u['department']})" for u in users]
+    try:
+        users = get_all_users()
+        user_names = [f"{u['name']} ({u['department']})" for u in users]
+    except Exception as e:
+        st.sidebar.error("❌ 資料庫錯誤，請重新整理頁面")
+        st.sidebar.info("🔄 或使用管理員功能重置資料庫")
+        st.stop()  # 停止執行，避免更多錯誤
     
     # 找到當前使用者的索引
     current_index = 0
@@ -415,31 +445,37 @@ with st.sidebar:
                     try:
                         import os
                         
-                        # 步驟 1：刪除舊資料庫
-                        db_path = 'campus_help.db'
-                        if os.path.exists(db_path):
-                            os.remove(db_path)
-                            st.sidebar.success("✅ 步驟 1/3：已刪除舊資料庫")
-                        else:
-                            st.sidebar.info("ℹ️ 步驟 1/3：資料庫不存在，將建立新的")
+                        st.sidebar.info("🔄 開始重置流程...")
                         
-                        # 步驟 2：重新建立資料庫結構
-                        from database import init_db
-                        init_db()
-                        st.sidebar.success("✅ 步驟 2/3：資料庫結構已建立")
+                        # 方法改變：不刪除檔案，而是清空並重建表格
+                        from database import Base, engine, seed_test_data
+                        
+                        # 步驟 1：刪除所有表格
+                        Base.metadata.drop_all(engine)
+                        st.sidebar.success("✅ 步驟 1/3：已清空舊資料")
+                        
+                        # 步驟 2：重新建立表格
+                        Base.metadata.create_all(engine)
+                        st.sidebar.success("✅ 步驟 2/3：資料庫結構已重建")
                         
                         # 步驟 3：填充測試資料
-                        from database import seed_test_data
                         seed_test_data()
                         st.sidebar.success("✅ 步驟 3/3：測試資料已填充")
                         
                         st.sidebar.success("🎉 資料庫重置完成！")
-                        st.sidebar.info("🔄 2秒後自動重新整理...")
+                        st.sidebar.info("🔄 3秒後自動重新整理...")
                         
-                        # 重置狀態並自動刷新
+                        # 清除所有 session_state（避免舊資料殘留）
+                        for key in list(st.session_state.keys()):
+                            if key not in ['confirm_reset_step']:
+                                del st.session_state[key]
+                        
+                        # 重置狀態
                         st.session_state.confirm_reset_step = 0
+                        st.session_state.current_user = None
+                        
                         import time
-                        time.sleep(2)
+                        time.sleep(3)
                         st.rerun()
                         
                     except Exception as e:
@@ -448,6 +484,17 @@ with st.sidebar:
                         import traceback
                         with st.sidebar.expander("📋 查看詳細錯誤"):
                             st.code(traceback.format_exc())
+                        
+                        # 嘗試修復：重建資料庫
+                        try:
+                            st.sidebar.warning("🔧 嘗試修復資料庫...")
+                            from database import init_db, seed_test_data
+                            init_db()
+                            seed_test_data()
+                            st.sidebar.success("✅ 修復成功！請重新整理頁面")
+                        except:
+                            st.sidebar.error("❌ 自動修復失敗，請使用 Zeabur Console 手動執行：python init_db.py")
+                        
                         st.session_state.confirm_reset_step = 0
             
             with col2:
