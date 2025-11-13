@@ -19,7 +19,7 @@ from config import Config
 # ========== 🔧 自動初始化資料庫（只在第一次部署時執行） ==========
 import os
 if not os.path.exists('campus_help.db'):
-    from init_db import init_database
+    from database import init_db, seed_test_data
     init_database()
     print("✅ 資料庫初始化完成")
 
@@ -381,8 +381,9 @@ with st.sidebar:
                             os.remove('campus_help.db')
                         
                         # 重新初始化
-                        from init_db import init_database
-                        init_database()
+                        from database import init_db, seed_test_data
+                        init_db()
+                        seed_test_data()
                         
                         st.sidebar.success("✅ 資料庫已重置完成！")
                         st.sidebar.info("🔄 請手動重新整理頁面")
