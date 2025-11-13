@@ -239,20 +239,8 @@ auto_complete_expired_tasks()
 
 # ========== 輔助函數 ==========
 def scroll_to_top_and_rerun():
-    """滾動到頁面頂部並重新運行（使用完全刷新）"""
-    
-    # 和密碼重置一樣，直接刷新頁面
-    components.html(
-        """
-        <script>
-            window.parent.location.reload();
-        </script>
-        """,
-        height=0,
-    )
-    
-    import time
-    time.sleep(0.5)
+    """重新運行（放棄滾動功能）"""
+    st.rerun()
 
 def get_risk_badge(risk_level):
     """根據風險等級返回徽章 HTML"""
