@@ -16,6 +16,35 @@ from ai_service import AIService
 from config import Config
 import streamlit.components.v1 as components
 
+
+# 頁面配置
+st.set_page_config(
+    page_title="Campus Help - 校園共享幫幫平台",
+    page_icon="💜",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ✅ 處理滾動到頂部（必須放在最前面）
+if st.session_state.get('_need_scroll', False):
+    st.markdown(
+        """
+        <script>
+            // 等待頁面完全載入後再滾動
+            setTimeout(function() {
+                const mainSection = window.parent.document.querySelector('section.main');
+                if (mainSection) {
+                    mainSection.scrollTo(0, 0);
+                }
+                window.parent.scrollTo(0, 0);
+            }, 100);
+        </script>
+        """,
+        unsafe_allow_html=True
+    )
+    st.session_state['_need_scroll'] = False
+    
+
 # ========== 🔧 自動初始化資料庫（只在第一次部署時執行） ==========
 import os
 
@@ -49,13 +78,7 @@ if not db_exists or not db_valid:
     except Exception as e:
         print(f"❌ 資料庫初始化失敗：{str(e)}")
 
-# 頁面配置
-st.set_page_config(
-    page_title="Campus Help - 校園共享幫幫平台",
-    page_icon="💜",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+
 
 # 自訂 CSS
 st.markdown("""
@@ -238,22 +261,8 @@ auto_complete_expired_tasks()
 # ========== 輔助函數 ==========
 def scroll_to_top_and_rerun():
     """滾動到頁面頂部並重新運行"""
-    # 使用 components 確保 JavaScript 執行
-    components.html(
-        """
-        <script>
-            // 滾動主要內容區域到頂部
-            const mainSection = window.parent.document.querySelector('section.main');
-            if (mainSection) {
-                mainSection.scrollTo({top: 0, behavior: 'instant'});
-            }
-            
-            // 同時滾動整個頁面到頂部
-            window.parent.scrollTo({top: 0, behavior: 'instant'});
-        </script>
-        """,
-        height=0,
-    )
+    # 設定滾動標記
+    st.session_state['_need_scroll'] = True
     st.rerun()
 
 def get_risk_badge(risk_level):
@@ -466,8 +475,9 @@ with st.sidebar:
                         st.sidebar.info("🔄 3秒後自動重新整理...")
                         
                         # 清除所有 session_state（避免舊資料殘留）
+                        keys_to_keep = []  # 空列表 = 清除所有東西
                         for key in list(st.session_state.keys()):
-                            if key not in ['confirm_reset_step']:
+                            if key not in keys_to_keep:
                                 del st.session_state[key]
                         
                         # 重置狀態
