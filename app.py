@@ -345,7 +345,7 @@ with st.sidebar:
         st.session_state.current_user = new_user
         st.session_state.previous_user = selected_user_name
         st.session_state.page = 'my_tasks'
-        scroll_to_top_and_rerun()
+        st.rerun()
     
     if st.session_state.current_user:
         st.success(f"✅ 已登入為：{st.session_state.current_user['name']}")
