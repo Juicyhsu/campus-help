@@ -16,7 +16,6 @@ from ai_service import AIService
 from config import Config
 import streamlit.components.v1 as components
 
-
 # 頁面配置
 st.set_page_config(
     page_title="Campus Help - 校園共享幫幫平台",
@@ -241,6 +240,42 @@ auto_complete_expired_tasks()
 # ========== 輔助函數 ==========
 def scroll_to_top_and_rerun():
     """滾動到頁面頂部並重新運行"""
+    
+    # 使用 JavaScript 滾動並強制刷新 DOM
+    components.html(
+        """
+        <script>
+            // 立即滾動
+            function scrollToTop() {
+                try {
+                    const mainSection = window.parent.document.querySelector('section.main');
+                    if (mainSection) {
+                        mainSection.scrollTop = 0;
+                        mainSection.scrollTo(0, 0);
+                    }
+                    window.parent.scrollTo(0, 0);
+                    window.parent.document.body.scrollTop = 0;
+                    window.parent.document.documentElement.scrollTop = 0;
+                } catch(e) {
+                    console.log('Scroll attempt:', e);
+                }
+            }
+            
+            // 立即執行
+            scrollToTop();
+            
+            // 多次重試確保成功
+            setTimeout(scrollToTop, 50);
+            setTimeout(scrollToTop, 100);
+            setTimeout(scrollToTop, 200);
+        </script>
+        """,
+        height=0,
+    )
+    
+    # 延遲一點點再 rerun，確保 JavaScript 執行完
+    import time
+    time.sleep(0.15)
     st.rerun()
 
 def get_risk_badge(risk_level):
@@ -556,10 +591,6 @@ st.markdown('<p class="sub-header">有空幫一下，校園時間銀行</p>', un
 
 # 首頁 - 任務列表
 if st.session_state.page == 'home':
-    st.markdown(
-        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
-        unsafe_allow_html=True
-    )
     st.markdown("## 📋 所有任務")
     
     col1, col2, col3 = st.columns([2, 2, 1])
@@ -673,10 +704,6 @@ if st.session_state.page == 'home':
 
 # 發布任務頁面
 elif st.session_state.page == 'publish':
-    st.markdown(
-        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
-        unsafe_allow_html=True
-    )
     st.markdown("## ➕ 發布新任務")
     
     if not st.session_state.current_user:
@@ -870,10 +897,6 @@ elif st.session_state.page == 'publish':
 
 # 我的任務頁面
 elif st.session_state.page == 'my_tasks':
-    st.markdown(
-        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
-        unsafe_allow_html=True
-    )
     st.markdown("## 📋 我的任務")
     
     if not st.session_state.current_user:
@@ -1220,10 +1243,6 @@ elif st.session_state.page == 'my_tasks':
 
 # AI 推薦頁面
 elif st.session_state.page == 'ai_recommend':
-    st.markdown(
-        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
-        unsafe_allow_html=True
-    )
     st.markdown("## 🤖 AI 智慧推薦")
     
     if not st.session_state.current_user:
@@ -1338,10 +1357,6 @@ elif st.session_state.page == 'ai_recommend':
 
 # 我的評價頁面
 elif st.session_state.page == 'reviews':
-    st.markdown(
-        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
-        unsafe_allow_html=True
-    )
     st.markdown("## ⭐ 我的評價")
     
     if not st.session_state.current_user:
@@ -1384,10 +1399,6 @@ elif st.session_state.page == 'reviews':
 
 # 技能管理頁面
 elif st.session_state.page == 'skills':
-    st.markdown(
-        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
-        unsafe_allow_html=True
-    )
     st.markdown("## 🛠️ 技能管理")
     
     if not st.session_state.current_user:
@@ -1469,10 +1480,6 @@ elif st.session_state.page == 'skills':
 
 # 統計儀表板頁面
 elif st.session_state.page == 'statistics':
-    st.markdown(
-        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
-        unsafe_allow_html=True
-    )
     st.markdown("## 📊 平台統計儀表板")
     st.info("🛡️ 展示 Campus Help 的運營數據與活躍度")
     
