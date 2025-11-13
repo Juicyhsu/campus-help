@@ -211,6 +211,15 @@ from database import auto_complete_expired_tasks
 auto_complete_expired_tasks()
 
 # ========== 輔助函數 ==========
+
+def scroll_to_top_and_rerun():
+    """滾動到頁面頂部並重新運行"""
+    st.markdown(
+        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
+        unsafe_allow_html=True
+    )
+    st.rerun()
+
 def get_risk_badge(risk_level):
     """根據風險等級返回徽章 HTML"""
     risk_map = {
@@ -297,7 +306,7 @@ with st.sidebar:
         st.session_state.current_user = new_user
         st.session_state.previous_user = selected_user_name
         st.session_state.page = 'my_tasks'
-        st.rerun()
+        scroll_to_top_and_rerun()
     
     if st.session_state.current_user:
         st.success(f"✅ 已登入為：{st.session_state.current_user['name']}")
@@ -334,112 +343,113 @@ with st.sidebar:
     
     if st.button("🏠 首頁", use_container_width=True):
         st.session_state.page = 'home'
-        st.rerun()
+        scroll_to_top_and_rerun()
     
     if st.button("➕ 發布任務", use_container_width=True):
         st.session_state.page = 'publish'
-        st.rerun()
+        scroll_to_top_and_rerun()
     
     if st.button("📋 我的任務", use_container_width=True):
         st.session_state.page = 'my_tasks'
-        st.rerun()
+        scroll_to_top_and_rerun()
     
     if st.button("🤖 AI 推薦", use_container_width=True):
         st.session_state.page = 'ai_recommend'
-        st.rerun()
+        scroll_to_top_and_rerun()
     
     if st.button("⭐ 我的評價", use_container_width=True):
         st.session_state.page = 'reviews'
-        st.rerun()
+        scroll_to_top_and_rerun()
     
     if st.button("🛠️ 技能管理", use_container_width=True):
         st.session_state.page = 'skills'
-        st.rerun()
+        scroll_to_top_and_rerun()
     
     if st.button("📊 平台統計", use_container_width=True):
         st.session_state.page = 'statistics'
-        st.rerun()
+        scroll_to_top_and_rerun()
 
     # ========== 🔧 管理員功能（密碼保護） ==========
-        st.sidebar.markdown("---")
-        st.sidebar.subheader("🔧 系統管理")
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🔧 系統管理")
+    
+    # 管理員密碼保護
+    admin_password = st.sidebar.text_input("管理員密碼", type="password", key="admin_pwd")
+    
+    # 🔧 從環境變數讀取密碼，預設為 scu2025
+    import os
+    ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "scu2025")
+    
+    if admin_password == ADMIN_PASSWORD:
+        st.sidebar.success("✅ 管理員已登入")
         
-        # 管理員密碼保護
-        admin_password = st.sidebar.text_input("管理員密碼", type="password", key="admin_pwd")
-        
-        # 🔧 這裡的密碼可以改成你自己的，或使用環境變數
-        ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "scu2025")
-        
-        if admin_password == ADMIN_PASSWORD:
-            st.sidebar.success("✅ 管理員已登入")
-            
-            # 重置資料庫按鈕
-            if st.sidebar.button("🔄 重置資料庫", type="primary", key="reset_db_btn"):
-                if st.sidebar.checkbox("⚠️ 確定要重置？（無法復原）", key="confirm_reset"):
-                    try:
-                        # 刪除舊資料庫
-                        if os.path.exists('campus_help.db'):
-                            os.remove('campus_help.db')
-                        
-                        # 重新初始化
-                        from database import init_db, seed_test_data
-                        init_db()
-                        seed_test_data()
-                        
-                        st.sidebar.success("✅ 資料庫已重置完成！")
-                        st.sidebar.info("🔄 請手動重新整理頁面")
-                        
-                    except Exception as e:
-                        st.sidebar.error(f"❌ 重置失敗：{str(e)}")
-            
-            # 查看資料庫狀態
-            if st.sidebar.button("📊 查看資料庫狀態", key="view_db_status"):
+        # 重置資料庫按鈕
+        if st.sidebar.button("🔄 重置資料庫", type="primary", key="reset_db_btn"):
+            if st.sidebar.checkbox("⚠️ 確定要重置？（無法復原）", key="confirm_reset"):
                 try:
-                    from database import SessionLocal, User, Task, Application
-                    session = SessionLocal()
+                    # 刪除舊資料庫
+                    if os.path.exists('campus_help.db'):
+                        os.remove('campus_help.db')
                     
-                    user_count = session.query(User).count()
-                    task_count = session.query(Task).count()
-                    app_count = session.query(Application).count()
+                    # 重新初始化
+                    from database import init_db, seed_test_data
+                    init_db()
+                    seed_test_data()
                     
-                    session.close()
+                    st.sidebar.success("✅ 資料庫已重置完成！")
+                    st.sidebar.info("🔄 請手動重新整理頁面")
                     
-                    st.sidebar.info(f"""
-                    **📊 資料庫狀態**
-                    - 使用者數：{user_count} 位
-                    - 任務數：{task_count} 個
-                    - 申請數：{app_count} 筆
-                    """)
                 except Exception as e:
-                    st.sidebar.error(f"❌ 查詢失敗：{str(e)}")
-            
-            # 詳細資料庫資訊（展開式）
-            with st.sidebar.expander("🔍 詳細資料庫資訊"):
-                try:
-                    from database import SessionLocal, User, Task, Application
-                    session = SessionLocal()
-                    
-                    # 統計資訊
-                    users = session.query(User).all()
-                    tasks = session.query(Task).all()
-                    apps = session.query(Application).all()
-                    
-                    st.write(f"**👥 使用者**：{len(users)} 位")
-                    for user in users[:5]:  # 只顯示前 5 位
-                        st.text(f"  - {user.username} ({user.points} 點)")
-                    
-                    st.write(f"**📋 任務**：{len(tasks)} 個")
-                    for task in tasks[:5]:
-                        st.text(f"  - {task.title} ({task.status})")
-                    
-                    st.write(f"**✉️ 申請**：{len(apps)} 筆")
-                    
-                    session.close()
-                except Exception as e:
-                    st.error(f"查詢失敗：{str(e)}")
+                    st.sidebar.error(f"❌ 重置失敗：{str(e)}")
         
-        elif admin_password:
-            st.sidebar.error("❌ 密碼錯誤")
+        # 查看資料庫狀態
+        if st.sidebar.button("📊 查看資料庫狀態", key="view_db_status"):
+            try:
+                from database import SessionLocal, User, Task, Application
+                session = SessionLocal()
+                
+                user_count = session.query(User).count()
+                task_count = session.query(Task).count()
+                app_count = session.query(Application).count()
+                
+                session.close()
+                
+                st.sidebar.info(f"""
+                **📊 資料庫狀態**
+                - 使用者數：{user_count} 位
+                - 任務數：{task_count} 個
+                - 申請數：{app_count} 筆
+                """)
+            except Exception as e:
+                st.sidebar.error(f"❌ 查詢失敗：{str(e)}")
+        
+        # 詳細資料庫資訊（展開式）
+        with st.sidebar.expander("🔍 詳細資料庫資訊"):
+            try:
+                from database import SessionLocal, User, Task, Application
+                session = SessionLocal()
+                
+                # 統計資訊
+                users = session.query(User).all()
+                tasks = session.query(Task).all()
+                apps = session.query(Application).all()
+                
+                st.write(f"**👥 使用者**：{len(users)} 位")
+                for user in users[:5]:  # 只顯示前 5 位
+                    st.text(f"  - {user.username} ({user.points} 點)")
+                
+                st.write(f"**📋 任務**：{len(tasks)} 個")
+                for task in tasks[:5]:
+                    st.text(f"  - {task.title} ({task.status})")
+                
+                st.write(f"**✉️ 申請**：{len(apps)} 筆")
+                
+                session.close()
+            except Exception as e:
+                st.error(f"查詢失敗：{str(e)}")
+    
+    elif admin_password:
+        st.sidebar.error("❌ 密碼錯誤")
 
 
 # ========== 主標題 ==========
@@ -526,7 +536,7 @@ if st.session_state.page == 'home':
                             if result:
                                 show_notification(f"申請成功！已向 {task.get('publisher_name')} 發送通知", "✅")
                                 st.success("✅ 申請成功！")
-                                st.rerun()
+                                scroll_to_top_and_rerun()
                             else:
                                 show_notification("申請失敗", "❌")
                                 st.error("申請失敗（可能已申請過或這是您自己的任務）")
@@ -543,7 +553,7 @@ if st.session_state.page == 'home':
                     
                     if st.button(button_text, key=f"toggle_pub_{task['id']}", use_container_width=True):
                         st.session_state[toggle_key] = not st.session_state[toggle_key]
-                        st.rerun()  # 🔧 加上這行強制重新渲染
+                        scroll_to_top_and_rerun()  # 🔧 加上這行強制重新渲染
                     
                     if st.session_state[toggle_key]:
                         publisher = get_user_by_id(task['publisher_id'])
@@ -749,7 +759,7 @@ elif st.session_state.page == 'publish':
                                 import time
                                 time.sleep(3)
                                 st.session_state.page = 'home'
-                                st.rerun()
+                                scroll_to_top_and_rerun()
                             else:
                                 show_notification("任務發布失敗（點數可能不足）", "❌")
                                 st.error("❌ 發布失敗，請檢查點數是否足夠")
@@ -822,7 +832,7 @@ elif st.session_state.page == 'my_tasks':
                                 if result:
                                     show_notification(f"任務已取消，返還 {task['points_offered']} 點", "💰")
                                     st.success(f"✅ 任務已取消！返還 {task['points_offered']} 點")
-                                    st.rerun()
+                                    scroll_to_top_and_rerun()
                         
                         # 🔧 修改：確認已完成任務按鈕 + 提示文字
                         if task['status'] == 'in_progress':
@@ -842,7 +852,7 @@ elif st.session_state.page == 'my_tasks':
                                         st.success(f"✅ 任務已完成！{task['accepted_user_name']} 獲得 {task['points_offered']} 點")
                                         st.info("🛡️ 點數轉移安全完成")
                                         st.balloons()
-                                        st.rerun()
+                                        scroll_to_top_and_rerun()
                             
                             with col_appeal:
                                 if st.button(f"⚠️ 任務未完成/申訴", key=f"appeal_pub_{task['id']}", use_container_width=True):
@@ -892,7 +902,7 @@ elif st.session_state.page == 'my_tasks':
                                             if result:
                                                 show_notification(f"已接受 {app['applicant_name']} 的申請！", "🎉")
                                                 st.success("✅ 已接受申請！任務進入進行中")
-                                                st.rerun()
+                                                scroll_to_top_and_rerun()
                                             else:
                                                 st.error("❌ 接受失敗（可能已接受過其他人）")
 
@@ -907,7 +917,7 @@ elif st.session_state.page == 'my_tasks':
                                             use_container_width=True
                                         ):
                                             st.session_state[view_key] = not st.session_state[view_key]
-                                            st.rerun()
+                                            scroll_to_top_and_rerun()
                                         
                                         if st.session_state[view_key]:
                                             applicant = get_user_by_id(app['applicant_id'])
@@ -961,7 +971,7 @@ elif st.session_state.page == 'my_tasks':
                                     if result:
                                         show_notification("評價提交成功！", "⭐")
                                         st.success("✅ 評價提交成功！")
-                                        st.rerun()
+                                        scroll_to_top_and_rerun()
             else:
                 st.info("您還沒有發布任何任務")
         
@@ -1005,7 +1015,7 @@ elif st.session_state.page == 'my_tasks':
                                 use_container_width=True
                             ):
                                 st.session_state[view_pub_key] = not st.session_state[view_pub_key]
-                                st.rerun()
+                                scroll_to_top_and_rerun()
                             
                             if st.session_state[view_pub_key]:
                                 publisher = get_user_by_id(task['publisher_id'])
@@ -1048,7 +1058,7 @@ elif st.session_state.page == 'my_tasks':
                                         show_notification("已通知發布者，請等待確認！", "📢")
                                         st.success("✅ 已通知發布者確認！")
                                         st.info("💡 發布者確認後，點數將自動轉移給您")
-                                        st.rerun()
+                                        scroll_to_top_and_rerun()
                         
                         # 🔧 修改：五星評價改為點選星星 + 點數交易已完成 + 評價狀態
                         if task['status'] == 'completed' and task.get('application_status') == 'accepted':
@@ -1094,7 +1104,7 @@ elif st.session_state.page == 'my_tasks':
                                     if result:
                                         show_notification("評價提交成功！", "⭐")
                                         st.success("✅ 評價提交成功！")
-                                        st.rerun()
+                                        scroll_to_top_and_rerun()
                         
                         st.markdown("---")
             else:
@@ -1205,7 +1215,7 @@ elif st.session_state.page == 'ai_recommend':
                             if result:
                                 show_notification("申請成功！")
                                 st.success("✅ 申請成功！")
-                                st.rerun()
+                                scroll_to_top_and_rerun()
                             else:
                                 show_notification("申請失敗", "❌")
                                 st.error("❌ 申請失敗（可能已申請過或這是您自己的任務）")
@@ -1309,7 +1319,7 @@ elif st.session_state.page == 'skills':
                         show_notification(f"成功新增技能：{custom_skill}", "✅")
                         st.success(f"✅ 已新增技能：{custom_skill}")
                         st.session_state.current_user = get_user_by_name(st.session_state.current_user['name'])
-                        st.rerun()
+                        scroll_to_top_and_rerun()
         
         with col_b:
             if st.button("💾 儲存快速選擇", use_container_width=True):
@@ -1322,7 +1332,7 @@ elif st.session_state.page == 'skills':
                     show_notification("技能已更新！", "✅")
                     st.success("✅ 技能已更新！")
                     st.session_state.current_user = get_user_by_name(st.session_state.current_user['name'])
-                    st.rerun()
+                    scroll_to_top_and_rerun()
         
         if current_skills:
             st.markdown("---")
@@ -1335,7 +1345,7 @@ elif st.session_state.page == 'skills':
                     show_notification(f"已移除技能：{skill_to_remove}", "✅")
                     st.success(f"✅ 已移除技能：{skill_to_remove}")
                     st.session_state.current_user = get_user_by_name(st.session_state.current_user['name'])
-                    st.rerun()
+                    scroll_to_top_and_rerun()
 
 # 統計儀表板頁面
 elif st.session_state.page == 'statistics':
