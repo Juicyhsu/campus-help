@@ -239,44 +239,20 @@ auto_complete_expired_tasks()
 
 # ========== 輔助函數 ==========
 def scroll_to_top_and_rerun():
-    """滾動到頁面頂部並重新運行"""
+    """滾動到頁面頂部並重新運行（使用完全刷新）"""
     
-    # 使用 JavaScript 滾動並強制刷新 DOM
+    # 和密碼重置一樣，直接刷新頁面
     components.html(
         """
         <script>
-            // 立即滾動
-            function scrollToTop() {
-                try {
-                    const mainSection = window.parent.document.querySelector('section.main');
-                    if (mainSection) {
-                        mainSection.scrollTop = 0;
-                        mainSection.scrollTo(0, 0);
-                    }
-                    window.parent.scrollTo(0, 0);
-                    window.parent.document.body.scrollTop = 0;
-                    window.parent.document.documentElement.scrollTop = 0;
-                } catch(e) {
-                    console.log('Scroll attempt:', e);
-                }
-            }
-            
-            // 立即執行
-            scrollToTop();
-            
-            // 多次重試確保成功
-            setTimeout(scrollToTop, 50);
-            setTimeout(scrollToTop, 100);
-            setTimeout(scrollToTop, 200);
+            window.parent.location.reload();
         </script>
         """,
         height=0,
     )
     
-    # 延遲一點點再 rerun，確保 JavaScript 執行完
     import time
-    time.sleep(0.15)
-    st.rerun()
+    time.sleep(0.5)
 
 def get_risk_badge(risk_level):
     """根據風險等級返回徽章 HTML"""
