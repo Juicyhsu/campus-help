@@ -14,7 +14,7 @@ from database import (
 from matching_engine import MatchingEngine
 from ai_service import AIService
 from config import Config
-
+import streamlit.components.v1 as components
 
 # ========== 🔧 自動初始化資料庫（只在第一次部署時執行） ==========
 import os
@@ -211,12 +211,23 @@ from database import auto_complete_expired_tasks
 auto_complete_expired_tasks()
 
 # ========== 輔助函數 ==========
-
 def scroll_to_top_and_rerun():
     """滾動到頁面頂部並重新運行"""
-    st.markdown(
-        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
-        unsafe_allow_html=True
+    # 使用 components 確保 JavaScript 執行
+    components.html(
+        """
+        <script>
+            // 滾動主要內容區域到頂部
+            const mainSection = window.parent.document.querySelector('section.main');
+            if (mainSection) {
+                mainSection.scrollTo({top: 0, behavior: 'instant'});
+            }
+            
+            // 同時滾動整個頁面到頂部
+            window.parent.scrollTo({top: 0, behavior: 'instant'});
+        </script>
+        """,
+        height=0,
     )
     st.rerun()
 
@@ -372,45 +383,87 @@ with st.sidebar:
     # ========== 🔧 管理員功能（密碼保護） ==========
     st.sidebar.markdown("---")
     st.sidebar.subheader("🔧 系統管理")
-    
+
     # 管理員密碼保護
     admin_password = st.sidebar.text_input("管理員密碼", type="password", key="admin_pwd")
-    
-    # 🔧 從環境變數讀取密碼，預設為 scu2025
+
+    # 從環境變數讀取密碼，預設為 scu2025
     import os
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "scu2025")
-    
+
     if admin_password == ADMIN_PASSWORD:
         st.sidebar.success("✅ 管理員已登入")
         
-        # 重置資料庫按鈕
-        if st.sidebar.button("🔄 重置資料庫", type="primary", key="reset_db_btn"):
-            if st.sidebar.checkbox("⚠️ 確定要重置？（無法復原）", key="confirm_reset"):
-                try:
-                    # 刪除舊資料庫
-                    if os.path.exists('campus_help.db'):
-                        os.remove('campus_help.db')
-                    
-                    # 重新初始化
-                    from database import init_db, seed_test_data
-                    init_db()
-                    seed_test_data()
-                    
-                    st.sidebar.success("✅ 資料庫已重置完成！")
-                    st.sidebar.info("🔄 請手動重新整理頁面")
-                    
-                except Exception as e:
-                    st.sidebar.error(f"❌ 重置失敗：{str(e)}")
+        # 重置資料庫按鈕（兩段式確認）
+        if 'confirm_reset_step' not in st.session_state:
+            st.session_state.confirm_reset_step = 0
+        
+        if st.session_state.confirm_reset_step == 0:
+            # 第一步：初始按鈕
+            if st.sidebar.button("🔄 重置資料庫", type="primary", key="reset_db_btn", use_container_width=True):
+                st.session_state.confirm_reset_step = 1
+                st.rerun()
+        
+        elif st.session_state.confirm_reset_step == 1:
+            # 第二步：確認警告
+            st.sidebar.warning("⚠️ 確定要重置資料庫？此操作無法復原！")
+            
+            col1, col2 = st.sidebar.columns(2)
+            
+            with col1:
+                if st.button("✅ 確定重置", type="primary", key="confirm_yes", use_container_width=True):
+                    try:
+                        import os
+                        
+                        # 步驟 1：刪除舊資料庫
+                        db_path = 'campus_help.db'
+                        if os.path.exists(db_path):
+                            os.remove(db_path)
+                            st.sidebar.success("✅ 步驟 1/3：已刪除舊資料庫")
+                        else:
+                            st.sidebar.info("ℹ️ 步驟 1/3：資料庫不存在，將建立新的")
+                        
+                        # 步驟 2：重新建立資料庫結構
+                        from database import init_db
+                        init_db()
+                        st.sidebar.success("✅ 步驟 2/3：資料庫結構已建立")
+                        
+                        # 步驟 3：填充測試資料
+                        from database import seed_test_data
+                        seed_test_data()
+                        st.sidebar.success("✅ 步驟 3/3：測試資料已填充")
+                        
+                        st.sidebar.success("🎉 資料庫重置完成！")
+                        st.sidebar.info("🔄 2秒後自動重新整理...")
+                        
+                        # 重置狀態並自動刷新
+                        st.session_state.confirm_reset_step = 0
+                        import time
+                        time.sleep(2)
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.sidebar.error(f"❌ 重置失敗：{str(e)}")
+                        # 顯示詳細錯誤
+                        import traceback
+                        with st.sidebar.expander("📋 查看詳細錯誤"):
+                            st.code(traceback.format_exc())
+                        st.session_state.confirm_reset_step = 0
+            
+            with col2:
+                if st.button("❌ 取消", key="confirm_no", use_container_width=True):
+                    st.session_state.confirm_reset_step = 0
+                    st.rerun()
         
         # 查看資料庫狀態
-        if st.sidebar.button("📊 查看資料庫狀態", key="view_db_status"):
+        if st.sidebar.button("📊 查看資料庫狀態", key="view_db_status", use_container_width=True):
             try:
-                from database import SessionLocal, User, Task, Application
-                session = SessionLocal()
+                from database import Session, User, Task, TaskApplication
+                session = Session()
                 
                 user_count = session.query(User).count()
                 task_count = session.query(Task).count()
-                app_count = session.query(Application).count()
+                app_count = session.query(TaskApplication).count()
                 
                 session.close()
                 
@@ -426,28 +479,34 @@ with st.sidebar:
         # 詳細資料庫資訊（展開式）
         with st.sidebar.expander("🔍 詳細資料庫資訊"):
             try:
-                from database import SessionLocal, User, Task, Application
-                session = SessionLocal()
+                from database import Session, User, Task, TaskApplication
+                session = Session()
                 
                 # 統計資訊
                 users = session.query(User).all()
                 tasks = session.query(Task).all()
-                apps = session.query(Application).all()
+                apps = session.query(TaskApplication).all()
                 
                 st.write(f"**👥 使用者**：{len(users)} 位")
                 for user in users[:5]:  # 只顯示前 5 位
-                    st.text(f"  - {user.username} ({user.points} 點)")
+                    st.text(f"  - {user.name} ({user.points} 點)")
+                
+                if len(users) > 5:
+                    st.text(f"  ... 還有 {len(users) - 5} 位")
                 
                 st.write(f"**📋 任務**：{len(tasks)} 個")
                 for task in tasks[:5]:
                     st.text(f"  - {task.title} ({task.status})")
+                
+                if len(tasks) > 5:
+                    st.text(f"  ... 還有 {len(tasks) - 5} 個")
                 
                 st.write(f"**✉️ 申請**：{len(apps)} 筆")
                 
                 session.close()
             except Exception as e:
                 st.error(f"查詢失敗：{str(e)}")
-    
+
     elif admin_password:
         st.sidebar.error("❌ 密碼錯誤")
 
