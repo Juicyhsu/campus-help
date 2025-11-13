@@ -552,7 +552,7 @@ st.markdown('<h1 class="main-header">💎 校園共享幫幫平台 Campus Help</
 st.markdown('<p class="sub-header">有空幫一下，校園時間銀行</p>', unsafe_allow_html=True)
 
 # ✅ 主導航按鈕（在頁面上方）
-st.markdown("---")
+st.markdown('<div style="border-top: 1px solid #e5e7eb; margin: 0.25rem 0;"></div>', unsafe_allow_html=True)
 col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
 
 with col1:
@@ -590,7 +590,7 @@ with col7:
         st.session_state.page = 'statistics'
         st.rerun()
 
-st.markdown("---")
+st.markdown('<div style="border-top: 1px solid #e5e7eb; margin: 0.25rem 0;"></div>', unsafe_allow_html=True)
 
 # ========== 頁面路由 ==========
 
