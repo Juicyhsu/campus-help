@@ -20,8 +20,9 @@ from config import Config
 import os
 if not os.path.exists('campus_help.db'):
     from database import init_db, seed_test_data
-    init_database()
-    print("✅ 資料庫初始化完成")
+    init_db()
+    seed_test_data()
+    print("✅ 資料庫初始化完成（含測試資料）")
 
 # 頁面配置
 st.set_page_config(
