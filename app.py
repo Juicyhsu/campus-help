@@ -551,6 +551,47 @@ with st.sidebar:
 st.markdown('<h1 class="main-header">💎 校園共享幫幫平台 Campus Help</h1>', unsafe_allow_html=True)
 st.markdown('<p class="sub-header">有空幫一下，校園時間銀行</p>', unsafe_allow_html=True)
 
+# ✅ 主導航按鈕（在頁面上方）
+st.markdown("---")
+col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+
+with col1:
+    if st.button("🏠 首頁", key="nav_home", use_container_width=True):
+        st.session_state.page = 'home'
+        st.rerun()
+
+with col2:
+    if st.button("➕ 發布任務", key="nav_publish", use_container_width=True):
+        st.session_state.page = 'publish'
+        st.rerun()
+
+with col3:
+    if st.button("📋 我的任務", key="nav_my_tasks", use_container_width=True):
+        st.session_state.page = 'my_tasks'
+        st.rerun()
+
+with col4:
+    if st.button("🤖 AI 推薦", key="nav_ai", use_container_width=True):
+        st.session_state.page = 'ai_recommend'
+        st.rerun()
+
+with col5:
+    if st.button("⭐ 我的評價", key="nav_reviews", use_container_width=True):
+        st.session_state.page = 'reviews'
+        st.rerun()
+
+with col6:
+    if st.button("🛠️ 技能管理", key="nav_skills", use_container_width=True):
+        st.session_state.page = 'skills'
+        st.rerun()
+
+with col7:
+    if st.button("📊 平台統計", key="nav_stats", use_container_width=True):
+        st.session_state.page = 'statistics'
+        st.rerun()
+
+st.markdown("---")
+
 # ========== 頁面路由 ==========
 
 # 首頁 - 任務列表
