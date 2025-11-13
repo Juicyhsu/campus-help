@@ -25,26 +25,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ✅ 處理滾動到頂部（必須放在最前面）
-if st.session_state.get('_need_scroll', False):
-    st.markdown(
-        """
-        <script>
-            // 等待頁面完全載入後再滾動
-            setTimeout(function() {
-                const mainSection = window.parent.document.querySelector('section.main');
-                if (mainSection) {
-                    mainSection.scrollTo(0, 0);
-                }
-                window.parent.scrollTo(0, 0);
-            }, 100);
-        </script>
-        """,
-        unsafe_allow_html=True
-    )
-    st.session_state['_need_scroll'] = False
-    
-
 # ========== 🔧 自動初始化資料庫（只在第一次部署時執行） ==========
 import os
 
@@ -261,8 +241,6 @@ auto_complete_expired_tasks()
 # ========== 輔助函數 ==========
 def scroll_to_top_and_rerun():
     """滾動到頁面頂部並重新運行"""
-    # 設定滾動標記
-    st.session_state['_need_scroll'] = True
     st.rerun()
 
 def get_risk_badge(risk_level):
@@ -472,21 +450,23 @@ with st.sidebar:
                         st.sidebar.success("✅ 步驟 3/3：測試資料已填充")
                         
                         st.sidebar.success("🎉 資料庫重置完成！")
-                        st.sidebar.info("🔄 3秒後自動重新整理...")
+                        st.sidebar.info("🔄 正在清空密碼並重新整理頁面...")
                         
-                        # 清除所有 session_state（避免舊資料殘留）
-                        keys_to_keep = []  # 空列表 = 清除所有東西
-                        for key in list(st.session_state.keys()):
-                            if key not in keys_to_keep:
-                                del st.session_state[key]
-                        
-                        # 重置狀態
-                        st.session_state.confirm_reset_step = 0
-                        st.session_state.current_user = None
+                        # ✅ 使用 JavaScript 強制重新整理頁面（這會清空所有輸入框）
+                        import streamlit.components.v1 as components
+                        components.html(
+                            """
+                            <script>
+                                setTimeout(function() {
+                                    window.parent.location.reload();
+                                }, 2000);
+                            </script>
+                            """,
+                            height=0,
+                        )
                         
                         import time
-                        time.sleep(3)
-                        st.rerun()
+                        time.sleep(2)
                         
                     except Exception as e:
                         st.sidebar.error(f"❌ 重置失敗：{str(e)}")
@@ -576,6 +556,10 @@ st.markdown('<p class="sub-header">有空幫一下，校園時間銀行</p>', un
 
 # 首頁 - 任務列表
 if st.session_state.page == 'home':
+    st.markdown(
+        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
+        unsafe_allow_html=True
+    )
     st.markdown("## 📋 所有任務")
     
     col1, col2, col3 = st.columns([2, 2, 1])
@@ -689,6 +673,10 @@ if st.session_state.page == 'home':
 
 # 發布任務頁面
 elif st.session_state.page == 'publish':
+    st.markdown(
+        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
+        unsafe_allow_html=True
+    )
     st.markdown("## ➕ 發布新任務")
     
     if not st.session_state.current_user:
@@ -882,6 +870,10 @@ elif st.session_state.page == 'publish':
 
 # 我的任務頁面
 elif st.session_state.page == 'my_tasks':
+    st.markdown(
+        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
+        unsafe_allow_html=True
+    )
     st.markdown("## 📋 我的任務")
     
     if not st.session_state.current_user:
@@ -1228,6 +1220,10 @@ elif st.session_state.page == 'my_tasks':
 
 # AI 推薦頁面
 elif st.session_state.page == 'ai_recommend':
+    st.markdown(
+        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
+        unsafe_allow_html=True
+    )
     st.markdown("## 🤖 AI 智慧推薦")
     
     if not st.session_state.current_user:
@@ -1342,6 +1338,10 @@ elif st.session_state.page == 'ai_recommend':
 
 # 我的評價頁面
 elif st.session_state.page == 'reviews':
+    st.markdown(
+        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
+        unsafe_allow_html=True
+    )
     st.markdown("## ⭐ 我的評價")
     
     if not st.session_state.current_user:
@@ -1384,6 +1384,10 @@ elif st.session_state.page == 'reviews':
 
 # 技能管理頁面
 elif st.session_state.page == 'skills':
+    st.markdown(
+        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
+        unsafe_allow_html=True
+    )
     st.markdown("## 🛠️ 技能管理")
     
     if not st.session_state.current_user:
@@ -1465,6 +1469,10 @@ elif st.session_state.page == 'skills':
 
 # 統計儀表板頁面
 elif st.session_state.page == 'statistics':
+    st.markdown(
+        '<script>window.parent.document.querySelector("section.main").scrollTo(0, 0);</script>',
+        unsafe_allow_html=True
+    )
     st.markdown("## 📊 平台統計儀表板")
     st.info("🛡️ 展示 Campus Help 的運營數據與活躍度")
     
